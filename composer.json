@@ -4,7 +4,8 @@
   "name": "punktde/neos-hyphenation",
   "license": "MIT",
   "require": {
-    "neos/neos": "*"
+    "neos/neos": "*",
+    "org_heigl/hyphenator": "^2.3"
   },
   "autoload": {
     "psr-4": {

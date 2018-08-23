@@ -10,6 +10,7 @@ namespace PunktDe\Neos\Hyphenation\Eel\Helper;
  * source code.
  */
 
+use \Org\Heigl\Hyphenator as h;
 use Neos\Flow\Annotations as Flow;
 use Neos\Eel\ProtectedContextAwareInterface;
 use Neos\Flow\Configuration\Exception\InvalidConfigurationException;
@@ -38,14 +39,20 @@ class HyphenHelper implements ProtectedContextAwareInterface
      */
     protected $padding;
 
+    protected $hyphenator;
+
     /**
      * @param string $text : the text which will be hyphenated
      * @return string : the hyphenated text (with oft hyphens)
      */
     public function hyphenateText(string $text): string
-    {
-        $hyphenateLongWords = function ($carry, $item): string {
-            $carry .= ' ' . (strlen($item) < 8 ? $item : $this->storeAndRetrieveWord($item));
+    {	$this->hyphenator = h\Hyphenator::factory();
+    	$this->hyphenator->getOptions()->setLeftMin(4);
+    	$this->hyphenator->getOptions()->setRightMin(4);
+	$this->hyphenator->getOptions()->setDefaultLocale('de_DE');
+	
+	$hyphenateLongWords = function ($carry, $item): string {
+            $carry .= ' ' . (strlen($item) < 8 ? $item : $this->storeAndRetrieveWord($item, $this->hyphenator));
             return $carry;
         };
 
@@ -56,13 +63,13 @@ class HyphenHelper implements ProtectedContextAwareInterface
      * @param string $word : the raw word to hyphenate and store or to retrieve if aready stored
      * @return string : the hyphenated word
      */
-    protected function storeAndRetrieveWord(string $word): string
+    protected function storeAndRetrieveWord(string $word, $hyphenator): string
     {
         $wordHash = md5($this->padding . $word);
         $cacheEntry = $this->hyphenationCache->get($wordHash);
 
         if (!$cacheEntry) {
-            $cacheEntry = $this->hyphenateWord($word);
+            $cacheEntry = $this->hyphenateWord($word, $hyphenator);
             $this->hyphenationCache->set($wordHash, $cacheEntry);
         }
 
@@ -73,11 +80,12 @@ class HyphenHelper implements ProtectedContextAwareInterface
      * @param string $word : the word to hyphenate
      * @return string : the hyphenated word
      */
-    protected function hyphenateWord(string $word): string
+    protected function hyphenateWord(string $word, $hyphenator): string
     {
-        $word = str_replace("'", "'\''", $word);
-        $statement = $this->getHyphenationModuleBinPath() . " '" . $word . "' '" . $this->padding . "'";
-        return trim(shell_exec($statement), "\n");
+        //$word = str_replace("'", "'\''", $word);
+        //$statement = $this->getHyphenationModuleBinPath() . " '" . $word . "' '" . $this->padding . "'";
+	//return trim(shell_exec($statement), "\n");
+	return $hyphenator->hyphenate($word);
     }
 
     /**
